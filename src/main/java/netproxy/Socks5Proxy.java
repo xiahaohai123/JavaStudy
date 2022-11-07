@@ -118,9 +118,15 @@ public class Socks5Proxy {
              */
             buf[index++] = 5;
             // 本客户端支持两种认证方式: NO AUTHENTICATION REQUIRED 和 USERNAME/PASSWORD
-            buf[index++] = 2;
-            buf[index++] = 0;
-            buf[index++] = 2;
+            if (username == null || password == null) {
+                // 在没有账号密码的时候需要请求仅支持一种认证方式，防止服务端要求使用账号密码认证
+                buf[index++] = 1;
+                buf[index++] = 0;
+            } else {
+                buf[index++] = 2;
+                buf[index++] = 0;
+                buf[index++] = 2;
+            }
             out.write(buf, 0, index);
 
             fill(in, buf, 2);

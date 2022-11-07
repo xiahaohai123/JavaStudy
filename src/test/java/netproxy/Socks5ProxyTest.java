@@ -31,4 +31,15 @@ class Socks5ProxyTest {
             socks5Proxy.close();
         });
     }
+
+    @Test
+    void connectWithoutAuth() {
+        String proxyHost = "10.13.0.52";
+        int proxyPort = 1080;
+        socks5Proxy = new Socks5Proxy(proxyHost, proxyPort);
+        Assertions.assertDoesNotThrow(() -> {
+            socks5Proxy.connect(desHostIpv4, desPort, timeout);
+            socks5Proxy.close();
+        });
+    }
 }
