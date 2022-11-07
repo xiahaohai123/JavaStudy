@@ -1,4 +1,4 @@
-package unclassified;
+package socket;
 
 import java.io.IOException;
 import java.io.InputStream;
