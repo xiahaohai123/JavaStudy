@@ -62,7 +62,7 @@ public class Socks5Proxy {
      * @param timeout 连接超时时长: ms
      * @throws ProxyException 异常信息
      */
-    public void connect(String host, int port, int timeout) throws ProxyException {
+    public void connect(String host, int port, long timeout) throws ProxyException {
         if (StringUtils.isBlank(host) || port <= 0) {
             throw new IllegalArgumentException("illegal param of host and port");
         }
@@ -72,7 +72,7 @@ public class Socks5Proxy {
             OutputStream out = socket.getOutputStream();
 
             if (timeout > 0) {
-                socket.setSoTimeout(timeout);
+                socket.setSoTimeout((int) timeout);
             }
             socket.setTcpNoDelay(true);
 
@@ -118,7 +118,7 @@ public class Socks5Proxy {
              */
             buf[index++] = 5;
             // 本客户端支持两种认证方式: NO AUTHENTICATION REQUIRED 和 USERNAME/PASSWORD
-            if (username == null || password == null) {
+            if (username == null && password == null) {
                 // 在没有账号密码的时候需要请求仅支持一种认证方式，防止服务端要求使用账号密码认证
                 buf[index++] = 1;
                 buf[index++] = 0;
@@ -136,7 +136,7 @@ public class Socks5Proxy {
                     authed = true;
                     break;
                 case 2:                 // USERNAME/PASSWORD
-                    if (username == null || password == null) {
+                    if (username == null && password == null) {
                         break;
                     }
                     /*
@@ -305,9 +305,9 @@ public class Socks5Proxy {
             try {
                 close();
             } catch (IOException ioException) {
-                log.warn("problem close socket: ", ioException);
+                log.warn("problem close socket: " + ioException.getMessage(), ioException);
             }
-            throw new ProxyException("Problem connect to destination by proxy: ", e);
+            throw new ProxyException("Problem connect to destination by proxy: " + e.getMessage(), e);
         }
     }
 
@@ -320,7 +320,7 @@ public class Socks5Proxy {
      * @throws IOException    输入输出异常
      * @throws ProxyException 代理服务异常
      */
-    private Socket createSocket(String host, int port, int timeout) throws IOException, ProxyException {
+    private Socket createSocket(String host, int port, long timeout) throws IOException, ProxyException {
         if (timeout <= 0) {
             return new Socket(host, port);
         }
@@ -336,7 +336,7 @@ public class Socks5Proxy {
                     try {
                         sockets[0].close();
                     } catch (IOException ioException) {
-                        log.warn("problem close socket: ", ioException);
+                        log.warn("problem close socket: " + ioException.getMessage(), ioException);
                     }
                 }
                 sockets[0] = null;
@@ -349,7 +349,7 @@ public class Socks5Proxy {
         try {
             createSocketThread.join(timeout);
         } catch (InterruptedException e) {
-            log.warn("interrupted when join create socket thread: ", e);
+            log.warn("interrupted when join create socket thread: " + e.getMessage(), e);
         }
 
         if (sockets[0] != null && sockets[0].isConnected()) {

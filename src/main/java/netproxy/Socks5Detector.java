@@ -56,12 +56,12 @@ public class Socks5Detector {
         try {
             socks5Proxy.connect(host, port, timeout);
         } catch (ProxyException e) {
-            throw new RuntimeException("problem detect server: ", e);
+            throw new RuntimeException("problem detect server: " + e.getMessage(), e);
         } finally {
             try {
                 socks5Proxy.close();
             } catch (IOException e) {
-                log.warn("problem close proxy: ", e);
+                log.warn("problem close proxy: " + e.getMessage(), e);
             }
         }
     }
