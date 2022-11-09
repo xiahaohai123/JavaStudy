@@ -12,6 +12,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class Socks5Proxy {
 
@@ -122,10 +123,18 @@ public class Socks5Proxy {
                 // 在没有账号密码的时候需要请求仅支持一种认证方式，防止服务端要求使用账号密码认证
                 buf[index++] = 1;
                 buf[index++] = 0;
+                if (log.isDebugEnabled()) {
+                    log.debug("connect to socks server use 'NO AUTHENTICATION REQUIRED', buf: "
+                            + Arrays.toString(cloneBuf(buf, index)));
+                }
             } else {
                 buf[index++] = 2;
                 buf[index++] = 0;
                 buf[index++] = 2;
+                if (log.isDebugEnabled()) {
+                    log.debug("connect to socks server use 'NO AUTHENTICATION REQUIRED' and 'USERNAME/PASSWORD', buf: "
+                            + Arrays.toString(cloneBuf(buf, index)));
+                }
             }
             out.write(buf, 0, index);
 
@@ -167,7 +176,9 @@ public class Socks5Proxy {
                     System.arraycopy(password.getBytes(StandardCharsets.UTF_8), 0, buf, index, pLength);
                     index += pLength;
                     out.write(buf, 0, index);
-
+                    if (log.isDebugEnabled()) {
+                        log.debug("auth with 'USERNAME/PASSWORD', buf: " + Arrays.toString(cloneBuf(buf, index)));
+                    }
                     /*
                        The server verifies the supplied UNAME and PASSWD, and sends the
                        following response:
@@ -262,6 +273,9 @@ public class Socks5Proxy {
             }
             buf[index++] = (byte) (port >>> 8);
             buf[index++] = (byte) (port & 0xff);
+            if (log.isDebugEnabled()) {
+                log.debug("send connect buf: " + Arrays.toString(cloneBuf(buf, index)));
+            }
             out.write(buf, 0, index);
 
             /*
@@ -300,6 +314,34 @@ public class Socks5Proxy {
             if (buf[1] != 0) {
                 throw new ProxyException(String.format("Failed to connect to host: %s, The server returns %d", host,
                         buf[1]));
+            } else {
+                switch (buf[3] & 0xff) {
+                    case 1:
+                        this.fill(in, buf, 4 + 2);
+                        if (log.isDebugEnabled()) {
+                            log.debug("receive ipv4 data buf: " + Arrays.toString(cloneBuf(buf, 0, 4)));
+                            log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, 4, 2)));
+                        }
+                        break;
+                    case 2:
+                    default:
+                        break;
+                    case 3:
+                        this.fill(in, buf, 1);
+                        int domainLength = buf[0] & 0xff;
+                        this.fill(in, buf, domainLength + 2);
+                        if (log.isDebugEnabled()) {
+                            log.debug("receive domain data buf: " + Arrays.toString(cloneBuf(buf, 0, domainLength)));
+                            log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, domainLength, 2)));
+                        }
+                        break;
+                    case 4:
+                        this.fill(in, buf, 16 + 2);
+                        if (log.isDebugEnabled()) {
+                            log.debug("receive ipv6 data buf: " + Arrays.toString(cloneBuf(buf, 0, 16)));
+                            log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, 16, 2)));
+                        }
+                }
             }
         } catch (Exception e) {
             try {
@@ -379,6 +421,35 @@ public class Socks5Proxy {
                 throw new IOException("stream is closed");
             }
         }
+    }
+
+    /**
+     * 克隆一个buf
+     * @param src 原始buf
+     * @param len 原始buf的有效长度
+     * @return 新buf
+     */
+    private byte[] cloneBuf(byte[] src, int len) {
+        return cloneBuf(src, 0, len);
+    }
+
+    /**
+     * 克隆一个buf
+     * @param src 原始buf
+     * @param pos 原始buf的克隆起始位置
+     * @param len 原始buf的有效长度
+     * @return 新buf
+     */
+    private byte[] cloneBuf(byte[] src, int pos, int len) {
+        if (src == null) {
+            return null;
+        }
+        if (src.length < len) {
+            len = src.length;
+        }
+        byte[] dest = new byte[len];
+        System.arraycopy(src, pos, dest, 0, len);
+        return dest;
     }
 
     /**

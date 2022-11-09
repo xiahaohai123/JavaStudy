@@ -48,7 +48,7 @@ class Socks5ProxyTest {
     }
 
     @Test
-    @DisplayName("no auth proxy, connect to domain")
+    @DisplayName("need auth proxy, connect to domain")
     void connectNeedAuthDomainServer() {
         socks5Proxy.setUserPasswd(proxyUser, proxyPwd);
         Assertions.assertDoesNotThrow(() -> {
