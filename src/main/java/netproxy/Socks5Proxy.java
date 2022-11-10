@@ -167,14 +167,28 @@ public class Socks5Proxy {
                      */
                     index = 0;
                     buf[index++] = 1;
-                    int uLength = username.length();
-                    buf[index++] = (byte) uLength;
-                    System.arraycopy(username.getBytes(StandardCharsets.UTF_8), 0, buf, index, uLength);
-                    index += uLength;
-                    int pLength = password.length();
-                    buf[index++] = (byte) pLength;
-                    System.arraycopy(password.getBytes(StandardCharsets.UTF_8), 0, buf, index, pLength);
-                    index += pLength;
+                    int usernameLength;
+                    if (username == null) {
+                        usernameLength = 0;
+                    } else {
+                        usernameLength = username.length();
+                    }
+                    buf[index++] = (byte) usernameLength;
+                    if (usernameLength > 0) {
+                        System.arraycopy(username.getBytes(StandardCharsets.UTF_8), 0, buf, index, usernameLength);
+                        index += usernameLength;
+                    }
+                    int pwdLength;
+                    if (password == null) {
+                        pwdLength = 0;
+                    } else {
+                        pwdLength = password.length();
+                    }
+                    buf[index++] = (byte) pwdLength;
+                    if (pwdLength > 0) {
+                        System.arraycopy(password.getBytes(StandardCharsets.UTF_8), 0, buf, index, pwdLength);
+                        index += pwdLength;
+                    }
                     out.write(buf, 0, index);
                     if (log.isDebugEnabled()) {
                         log.debug("auth with 'USERNAME/PASSWORD', buf: " + Arrays.toString(cloneBuf(buf, index)));
@@ -246,31 +260,13 @@ public class Socks5Proxy {
             buf[index++] = 1;
             buf[index++] = 0;
 
-            InetAddress addr = null;
-            boolean isDomainName = false;
-            try {
-                addr = InetAddress.getByName(host);
-            } catch (UnknownHostException e) {
-                log.debug("unknown host", e);
-                if (host.equals(e.getMessage())) {
-                    isDomainName = true;
-                } else {
-                    throw new ProxyException("invalid host: " + host, e);
-                }
-            }
-            if (!isDomainName) {
-                int len = addr.getAddress().length;
-                buf[index++] = (byte) ((addr instanceof Inet6Address) ? 4 : 1);
-                System.arraycopy(addr.getAddress(), 0, buf, index, len);
-                index += len;
-            } else {
-                byte[] hostB = host.getBytes(StandardCharsets.UTF_8);
-                buf[index++] = (byte) 3;
-                int len = hostB.length;
-                buf[index++] = (byte) len;
-                System.arraycopy(hostB, 0, buf, index, len);
-                index += len;
-            }
+            // 直接使用域名方式，域名方式通常情况下可以通用IPV4和IPV6
+            byte[] hostB = host.getBytes(StandardCharsets.UTF_8);
+            buf[index++] = (byte) 3;
+            int len = hostB.length;
+            buf[index++] = (byte) len;
+            System.arraycopy(hostB, 0, buf, index, len);
+            index += len;
             buf[index++] = (byte) (port >>> 8);
             buf[index++] = (byte) (port & 0xff);
             if (log.isDebugEnabled()) {
