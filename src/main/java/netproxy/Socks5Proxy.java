@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -307,13 +308,18 @@ public class Socks5Proxy {
                       o  BND.PORT       server bound port in network octet order
              */
             fill(in, buf, 4);
+            if (log.isDebugEnabled()) {
+                log.debug("receive connect result buf: " + Arrays.toString(cloneBuf(buf, 4)));
+            }
             if (buf[1] != 0) {
                 throw new ProxyException(String.format("Failed to connect to host: %s, The server returns %d", host,
                         buf[1]));
             } else {
+                int portIndex;
                 switch (buf[3] & 0xff) {
                     case 1:
                         this.fill(in, buf, 4 + 2);
+                        portIndex = 4;
                         if (log.isDebugEnabled()) {
                             log.debug("receive ipv4 data buf: " + Arrays.toString(cloneBuf(buf, 0, 4)));
                             log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, 4, 2)));
@@ -321,11 +327,12 @@ public class Socks5Proxy {
                         break;
                     case 2:
                     default:
-                        break;
+                        throw new ProxyException(String.format("Received error ATYP %d", buf[1]));
                     case 3:
                         this.fill(in, buf, 1);
                         int domainLength = buf[0] & 0xff;
                         this.fill(in, buf, domainLength + 2);
+                        portIndex = domainLength;
                         if (log.isDebugEnabled()) {
                             log.debug("receive domain data buf: " + Arrays.toString(cloneBuf(buf, 0, domainLength)));
                             log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, domainLength, 2)));
@@ -333,10 +340,19 @@ public class Socks5Proxy {
                         break;
                     case 4:
                         this.fill(in, buf, 16 + 2);
+                        portIndex = 16;
                         if (log.isDebugEnabled()) {
                             log.debug("receive ipv6 data buf: " + Arrays.toString(cloneBuf(buf, 0, 16)));
                             log.debug("receive port data buf: " + Arrays.toString(cloneBuf(buf, 16, 2)));
                         }
+                }
+                // 判断端口，如果为0则认为失败
+                int serverBindPort = new BigInteger(1, cloneBuf(buf, portIndex, 2)).intValue();
+                if (log.isDebugEnabled()) {
+                    log.debug("server bound port in network is " + serverBindPort);
+                }
+                if (serverBindPort == 0) {
+                    throw new ProxyException("unsupported bound port: " + serverBindPort);
                 }
             }
         } catch (Exception e) {
@@ -345,7 +361,7 @@ public class Socks5Proxy {
             } catch (IOException ioException) {
                 log.warn("problem close socket: " + ioException.getMessage(), ioException);
             }
-            throw new ProxyException("Problem connect to destination by proxy: " + e.getMessage(), e);
+            throw new ProxyException("problem connect to destination by proxy: " + e.getMessage(), e);
         }
     }
 
