@@ -19,6 +19,13 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-core:2.+'
     implementation 'org.apache.logging.log4j:log4j-jul:2.+'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: '2.+'
+    // https://mvnrepository.com/artifact/com.rabbitmq/amqp-client
+    implementation 'com.rabbitmq:amqp-client:5.+'
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on
+    implementation 'org.bouncycastle:bcpkix-jdk15on:1.+'
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on
+    implementation 'org.bouncycastle:bcpg-jdk15on:1.+'
+
 
     implementation group: 'commons-logging', name: 'commons-logging', version: '1.2'
 
