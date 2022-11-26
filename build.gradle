@@ -1,7 +1,11 @@
 plugins {
     id 'java'
     id "org.sonarqube" version "3.4.0.2513"
+    id 'checkstyle'
 }
+
+apply plugin: 'checkstyle'
+apply plugin: 'org.sonarqube'
 
 group 'org.example'
 version '1.0-SNAPSHOT'
@@ -42,4 +46,31 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/google/' }
         maven { url 'https://maven.aliyun.com/repository/jcenter/' }
     }
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "javastudy"
+        property "sonar.host.url", "http://localhost:9000"
+        property "sonar.login", "sqp_ccaf11520a999d21753b8a2f2e2602c5d43f7914"
+        // 需要本地调用 gradle sonarqube 时请打开下方注释，确保分析结果会在当前分支呈现。
+        // 注意，本地调用 gradle sonarqube 会导致 SonarQube 服务器上对应分支的分析报告变为您当前 IDE 上代码的分析，包括未提交的变更。
+        // property "sonar.branch.name", gitBranch()
+        // 如果您不负责 CMO 相关职责，请不要将本部分注释的变更提交到远程代码库中。
+    }
+}
+
+static def gitBranch() {
+    def branch = ""
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    proc.in.eachLine { line -> branch = line }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    branch
+}
+
+task branch {
+    def branch = gitBranch()
+    println branch
+    println branch
 }

@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+
+variables:
+  SONAR_TOKEN: "sqa_98c2a7fa6a6d8699acc4213342f2b4a5c2cac811"
+  SONAR_HOST_URL: "http://localhost:9000"
+
+build:
+  stage: build
+  script:
+    - gradlew jar
+  only:
+    - merge_requests
+
+checkstyle:
+  stage: test
+  script:
+    - gradlew checkstyleMain
+  only:
+    - merge_requests
+  artifacts:
+    name: "checkstyle-$CI_PROJECT_NAME-$CI_COMMIT_SHA"
+    paths:
+      - build/reports/checkstyle
+    when: on_failure
+    expire_in: 1 week
+
+sonarqube-check:
+  stage: test
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  script: gradle sonarqube -Dsonar.qualitygate.wait=true -Dsonar.newCode.referenceBranch=master
+  only:
+    - merge_requests
+
+sonarqube-release-check:
+  stage: test
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  script: gradle sonarqube -Dsonar.qualitygate.wait=true -Dsonar.branch.name=master
+  only:
+    - schedules
