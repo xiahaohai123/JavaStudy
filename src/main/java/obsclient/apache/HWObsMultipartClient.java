@@ -1,9 +1,9 @@
 package obsclient.apache;
 
-import com.example.huaweiOBSApiClient.apache.entity.CompleteMultipartUpload;
-import com.example.huaweiOBSApiClient.apache.entity.InitiatedMultipartUpload;
-import com.example.huaweiOBSApiClient.apache.entity.MultipartUploads;
-import com.example.huaweiOBSApiClient.apache.entity.UploadedPart;
+import obsclient.apache.entity.CompleteMultipartUpload;
+import obsclient.apache.entity.InitiatedMultipartUpload;
+import obsclient.apache.entity.MultipartUploads;
+import obsclient.apache.entity.UploadedPart;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpDelete;

@@ -1,6 +1,6 @@
 package obsclient.apache;
 
-import com.example.huaweiOBSApiClient.apache.entity.Delete;
+import obsclient.apache.entity.Delete;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;

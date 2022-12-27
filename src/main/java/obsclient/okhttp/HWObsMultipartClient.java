@@ -1,8 +1,8 @@
 package obsclient.okhttp;
 
-import com.example.huaweiOBSApiClient.okhttp.entity.CompleteMultipartUpload;
-import com.example.huaweiOBSApiClient.okhttp.entity.InitiatedMultipartUpload;
-import com.example.huaweiOBSApiClient.okhttp.entity.UploadedPart;
+import obsclient.okhttp.entity.CompleteMultipartUpload;
+import obsclient.okhttp.entity.InitiatedMultipartUpload;
+import obsclient.okhttp.entity.UploadedPart;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -33,7 +33,7 @@ public class HWObsMultipartClient extends AbstractHWObsClient {
      * 构造器
      * @param obsServer 对象存储服务器数据
      */
-    public HWObsMultipartClient(com.example.huaweiOBSApiClient.okhttp.ObsServer obsServer) {
+    public HWObsMultipartClient(obsclient.okhttp.ObsServer obsServer) {
         super(obsServer);
     }
 

@@ -81,3 +81,7 @@ task branch {
     println branch
     println branch
 }
+
+tasks.withType(JavaCompile){
+    options.encoding = 'UTF-8'
+}
