@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -32,6 +33,17 @@ public class MapSplitter {
         }
     }
 
+    static class SplitProgress {
+        Stack<Map<String, Object>> result = new Stack<>();
+        IntegerWrapper accumulation = new IntegerWrapper(0);
+        Integer limitation;
+
+        public SplitProgress(int limitation) {
+            result.push(new HashMap<>());
+            this.limitation = limitation;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void doSplit(Map<String, Object> srcMap,
                          Stack<Map<String, Object>> result, IntegerWrapper accumulation,
@@ -49,17 +61,7 @@ public class MapSplitter {
                 doSplit(toSplitMap, result, accumulation, limitation, keyIter, depth + 1);
                 keyIter.pop();
             } else {
-                String valueStr = value.toString();
-                String trimmedValueStr = trimString(valueStr, limitation);
-                int newValueSize = trimmedValueStr.getBytes().length;
-                if (newValueSize + accumulation.value > limitation) {
-                    result.push(new HashMap<>());
-                    deepPutValue(result.peek(), keyIter, entryKey, trimmedValueStr);
-                    accumulation.value = newValueSize;
-                } else {
-                    deepPutValue(result.peek(), keyIter, entryKey, trimmedValueStr);
-                    accumulation.value += newValueSize;
-                }
+                castString2PutValue(result, accumulation, limitation, keyIter, entryKey, value);
             }
         }
     }
@@ -78,6 +80,9 @@ public class MapSplitter {
             return src;
         }
         int stepLength = limitation / 30;
+        if (stepLength == 0) {
+            stepLength = 1;
+        }
         int realLimitation = limitation - 3;
         while (src.getBytes().length > realLimitation) {
             src = src.substring(0, src.length() - stepLength);
@@ -85,7 +90,9 @@ public class MapSplitter {
         return src + "...";
     }
 
-    public Collection<Map<String, Object>> splitMapBySizeSyn(Map<String, Object> srcMap1, Map<String, Object> srcMap2, int limitation) {
+    public Collection<Map<String, Object>> splitMapBySizeSyn(String key1, Map<String, Object> srcMap1,
+                                                             String key2, Map<String, Object> srcMap2,
+                                                             int limitation) {
         if (limitation <= 0) {
             return Collections.emptyList();
         }
@@ -95,45 +102,84 @@ public class MapSplitter {
             return splitMapBySize(srcMap1, limitation);
         }
 
-        Stack<Map<String, Object>> collector = new Stack<>();
-        HashMap<String, Object> collectorMap = new HashMap<>();
-        collector.push(collectorMap);
-        doSynSplit(srcMap1, srcMap2, collector, new IntegerWrapper(0), limitation, new Stack<>(), 0);
-        return collector;
+        SplitProgress progress1 = new SplitProgress(limitation / 2);
+        SplitProgress progress2 = new SplitProgress(limitation / 2);
+        doSynSplit(srcMap1, srcMap2, progress1, progress2, new Stack<>(), 0);
 
+        Stack<Map<String, Object>> result1 = progress1.result;
+        Stack<Map<String, Object>> result2 = progress2.result;
+        List<Map<String, Object>> result = new ArrayList<>();
+        while (!result1.isEmpty()) {
+            Map<String, Object> map1 = result1.pop();
+            Map<String, Object> map2 = result2.pop();
+            Map<String, Object> layer = new HashMap<>();
+            layer.put(key1, map1);
+            layer.put(key2, map2);
+            result.add(layer);
+        }
+        while (!result2.isEmpty()) {
+            Map<String, Object> map2 = result2.pop();
+            Map<String, Object> layer = new HashMap<>();
+            layer.put(key2, map2);
+            result.add(layer);
+        }
+        return result;
     }
 
+    @SuppressWarnings("unchecked")
     private void doSynSplit(Map<String, Object> srcMap1, Map<String, Object> srcMap2,
-                            Stack<Map<String, Object>> result, IntegerWrapper accumulation,
-                            int limitation, Stack<String> keyIter,
+                            SplitProgress progress1, SplitProgress progress2, Stack<String> keyIter,
                             int depth) {
-
         for (Map.Entry<String, Object> entry : srcMap1.entrySet()) {
             String entryKey = entry.getKey();
-            Object entryValue = entry.getValue();
-            // TODO: 2022/12/27 先处理 map1 再单独处理 map2
-            if (entryValue == null) {
-                deepPutValue(result.peek(), keyIter, entryKey, null);
+            Object value1 = entry.getValue();
+            Object value2 = srcMap2.get(entryKey);
+            if (value1 instanceof Map && value2 instanceof Map && depth < 10) {
+                keyIter.push(entryKey);
+                Map<String, Object> toSplitMap1 = (Map<String, Object>) value1;
+                Map<String, Object> toSplitMap2 = (Map<String, Object>) value2;
+                doSynSplit(toSplitMap1, toSplitMap2, progress1, progress2, keyIter, depth + 1);
+                keyIter.pop();
+            } else {
+                String valueStr1 = value1 == null ? null : value1.toString();
+                String trimmedValueStr1 = trimString(valueStr1, progress1.limitation);
+                int newValueSize1 = trimmedValueStr1 == null ? 0 : trimmedValueStr1.getBytes().length;
+                String valueStr2 = value2 == null ? null : value2.toString();
+                String trimmedValueStr2 = trimString(valueStr2, progress1.limitation);
+                int newValueSize2 = trimmedValueStr2 == null ? 0 : trimmedValueStr2.getBytes().length;
+                if (newValueSize1 + progress1.accumulation.value > progress1.limitation
+                        || newValueSize2 + progress2.accumulation.value > progress2.limitation) {
+                    progress1.result.push(new HashMap<>());
+                    progress2.result.push(new HashMap<>());
+                    progress1.accumulation.value = 0;
+                    progress2.accumulation.value = 0;
+                }
+                deepPutValue(progress1.result.peek(), keyIter, entryKey, trimmedValueStr1);
+                progress1.accumulation.value += newValueSize1;
+                deepPutValue(progress2.result.peek(), keyIter, entryKey, trimmedValueStr2);
+                progress2.accumulation.value += newValueSize2;
             }
-//            if (entryValue instanceof Map && depth < 10) {
-//                keyIter.push(entryKey);
-//                Map<String, Object> toSplitMap = (Map<String, Object>) value;
-//                doSplit(toSplitMap, result, accumulation, limitation, keyIter, depth + 1);
-//                keyIter.pop();
-//            } else {
-//                String valueStr = value.toString();
-//                String trimmedValueStr = trimString(valueStr, limitation);
-//                int newValueSize = trimmedValueStr.getBytes().length;
-//                if (newValueSize + accumulation.value > limitation) {
-//                    result.push(new HashMap<>());
-//                    deepPutValue(result.peek(), keyIter, entryKey, trimmedValueStr);
-//                    accumulation.value = newValueSize;
-//                } else {
-//                    deepPutValue(result.peek(), keyIter, entryKey, trimmedValueStr);
-//                    accumulation.value += newValueSize;
-//                }
-//            }
         }
 
+        srcMap2.keySet().removeAll(srcMap1.keySet());
+        srcMap1.clear();
+        if (!srcMap2.isEmpty()) {
+            doSynSplit(srcMap2, srcMap1, progress2, progress1, keyIter, depth + 1);
+        }
+    }
+
+    private void castString2PutValue(Stack<Map<String, Object>> result, IntegerWrapper accumulation, int limitation,
+                                     Stack<String> keyIter, String key, Object value) {
+        String valueStr = value.toString();
+        String trimmedValueStr = trimString(valueStr, limitation);
+        int newValueSize = trimmedValueStr.getBytes().length;
+        if (newValueSize + accumulation.value > limitation) {
+            result.push(new HashMap<>());
+            deepPutValue(result.peek(), keyIter, key, trimmedValueStr);
+            accumulation.value = newValueSize;
+        } else {
+            deepPutValue(result.peek(), keyIter, key, trimmedValueStr);
+            accumulation.value += newValueSize;
+        }
     }
 }
