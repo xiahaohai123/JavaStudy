@@ -3,25 +3,27 @@ package collection;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
 public class MapSplitter {
 
-    public Collection<Map<String, Object>> splitMapBySize(Map<String, Object> srcMap, int limitation) {
+    public static Collection<Map<String, Object>> splitMapBySize(Map<String, Object> srcMap, int limitation) {
         if (CollectionUtils.isEmpty(srcMap) || limitation <= 0) {
             return Collections.emptyList();
         }
 
-        Stack<Map<String, Object>> collector = new Stack<>();
+        Deque<Map<String, Object>> collector = new ArrayDeque<>();
         HashMap<String, Object> collectorMap = new HashMap<>();
         collector.push(collectorMap);
-        doSplit(srcMap, collector, new IntegerWrapper(0), limitation, new Stack<>(), 0);
+        doSplit(srcMap, collector, new IntegerWrapper(0), limitation, new ArrayDeque<>(), 0);
         return collector;
     }
 
@@ -34,7 +36,7 @@ public class MapSplitter {
     }
 
     static class SplitProgress {
-        Stack<Map<String, Object>> result = new Stack<>();
+        Deque<Map<String, Object>> result = new ArrayDeque<>();
         IntegerWrapper accumulation = new IntegerWrapper(0);
         Integer limitation;
 
@@ -45,10 +47,10 @@ public class MapSplitter {
     }
 
     @SuppressWarnings("unchecked")
-    private void doSplit(Map<String, Object> srcMap,
-                         Stack<Map<String, Object>> result, IntegerWrapper accumulation,
-                         int limitation, Stack<String> keyIter,
-                         int depth) {
+    private static void doSplit(Map<String, Object> srcMap,
+                                Deque<Map<String, Object>> result, IntegerWrapper accumulation,
+                                int limitation, Deque<String> keyIter,
+                                int depth) {
         for (Map.Entry<String, Object> entry : srcMap.entrySet()) {
             Object value = entry.getValue();
             String entryKey = entry.getKey();
@@ -67,15 +69,16 @@ public class MapSplitter {
     }
 
     @SuppressWarnings("unchecked")
-    private static void deepPutValue(Map<String, Object> collectorMap, Collection<String> keyIter, String finalKey, Object value) {
+    private static void deepPutValue(Map<String, Object> collectorMap, Deque<String> keyIter, String finalKey, Object value) {
         Map<String, Object> currentMap = collectorMap;
-        for (String key : keyIter) {
-            currentMap = (Map<String, Object>) currentMap.computeIfAbsent(key, k -> new HashMap<>());
+        Iterator<String> iter = keyIter.descendingIterator();
+        while (iter.hasNext()) {
+            currentMap = (Map<String, Object>) currentMap.computeIfAbsent(iter.next(), k -> new HashMap<>());
         }
         currentMap.put(finalKey, value);
     }
 
-    private String trimString(String src, int limitation) {
+    private static String trimString(String src, int limitation) {
         if (StringUtils.isBlank(src) || src.getBytes().length <= limitation) {
             return src;
         }
@@ -90,9 +93,9 @@ public class MapSplitter {
         return src + "...";
     }
 
-    public Collection<Map<String, Object>> splitMapBySizeSyn(String key1, Map<String, Object> srcMap1,
-                                                             String key2, Map<String, Object> srcMap2,
-                                                             int limitation) {
+    public static Collection<Map<String, Object>> splitMapBySizeSyn(String key1, Map<String, Object> srcMap1,
+                                                                    String key2, Map<String, Object> srcMap2,
+                                                                    int limitation) {
         if (limitation <= 0) {
             return Collections.emptyList();
         }
@@ -104,10 +107,10 @@ public class MapSplitter {
 
         SplitProgress progress1 = new SplitProgress(limitation / 2);
         SplitProgress progress2 = new SplitProgress(limitation / 2);
-        doSynSplit(srcMap1, srcMap2, progress1, progress2, new Stack<>(), 0);
+        doSynSplit(srcMap1, srcMap2, progress1, progress2, new ArrayDeque<>(), 0);
 
-        Stack<Map<String, Object>> result1 = progress1.result;
-        Stack<Map<String, Object>> result2 = progress2.result;
+        Deque<Map<String, Object>> result1 = progress1.result;
+        Deque<Map<String, Object>> result2 = progress2.result;
         List<Map<String, Object>> result = new ArrayList<>();
         while (!result1.isEmpty()) {
             Map<String, Object> map1 = result1.pop();
@@ -127,9 +130,9 @@ public class MapSplitter {
     }
 
     @SuppressWarnings("unchecked")
-    private void doSynSplit(Map<String, Object> srcMap1, Map<String, Object> srcMap2,
-                            SplitProgress progress1, SplitProgress progress2, Stack<String> keyIter,
-                            int depth) {
+    private static void doSynSplit(Map<String, Object> srcMap1, Map<String, Object> srcMap2,
+                                   SplitProgress progress1, SplitProgress progress2, Deque<String> keyIter,
+                                   int depth) {
         for (Map.Entry<String, Object> entry : srcMap1.entrySet()) {
             String entryKey = entry.getKey();
             Object value1 = entry.getValue();
@@ -168,8 +171,8 @@ public class MapSplitter {
         }
     }
 
-    private void castString2PutValue(Stack<Map<String, Object>> result, IntegerWrapper accumulation, int limitation,
-                                     Stack<String> keyIter, String key, Object value) {
+    private static void castString2PutValue(Deque<Map<String, Object>> result, IntegerWrapper accumulation, int limitation,
+                                            Deque<String> keyIter, String key, Object value) {
         String valueStr = value.toString();
         String trimmedValueStr = trimString(valueStr, limitation);
         int newValueSize = trimmedValueStr.getBytes().length;
