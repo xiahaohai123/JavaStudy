@@ -4,6 +4,8 @@ package math;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.math.BigDecimal;
+
 import static java.lang.Math.PI;
 import static java.lang.Math.acos;
 import static java.lang.Math.atan;
@@ -20,8 +22,12 @@ public class BezierCurveCalculator {
     public static void main(String[] args) {
         Result result1 = calculate(0, 0, 2, 1, -sqrt(3), 60);
         log.info("result1: " + result1);
+        log.info("");
         Result result2 = calculate(0, 0, 2, -1, sqrt(3), 90);
         log.info("result2: " + result2);
+        log.info("");
+        Result result3 = calculate(0, 0, 1, 1, 0, 90);
+        log.info("result3" + result3);
     }
 
 
@@ -62,7 +68,11 @@ public class BezierCurveCalculator {
         double angle0HypotenuseControlBar2 = angle - angleControlBar;
         double radian0HypotenuseControlBar2 = angle2Radian(angle0HypotenuseControlBar2);
         Point pointControl2 = calPoint(cx, cy, lengthHypotenuseControlBar, radian0HypotenuseControlBar2);
-        return new Result(endPoint, pointControl1, pointControl2);
+
+        int scale = 12;
+        Result result = new Result(endPoint, pointControl1, pointControl2);
+        result.round(scale);
+        return result;
     }
 
     /**
@@ -133,6 +143,12 @@ public class BezierCurveCalculator {
                     ", controlPoint2=" + controlPoint2 +
                     '}';
         }
+
+        public void round(int scale) {
+            endPoint.round(scale);
+            controlPoint1.round(scale);
+            controlPoint2.round(scale);
+        }
     }
 
     static class Point {
@@ -147,6 +163,11 @@ public class BezierCurveCalculator {
         @Override
         public String toString() {
             return "(x=" + x + ", y=" + y + ")";
+        }
+
+        public void round(int scale) {
+            x = BigDecimal.valueOf(x).setScale(scale, BigDecimal.ROUND_HALF_UP).doubleValue();
+            y = BigDecimal.valueOf(y).setScale(scale, BigDecimal.ROUND_HALF_UP).doubleValue();
         }
     }
 }
