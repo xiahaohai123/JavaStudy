@@ -55,12 +55,18 @@ public class BezierCurveCalculator {
         // dy = d * sin(θ)
         // 计算以圆心为坐标轴正方向开始逆时针旋转到起始线段的角度
         double angle0Begin = calAngleBegin(cx, cy, r, startX, startY);
-        log.info("angle0Begin: " + angle0Begin);
-        Point endPoint = calEndPoint(cx, cy, r, angle0Begin, angle);
-        log.info("end point: " + endPoint);
+        log.debug("angle0Begin: " + angle0Begin);
+
+        // 计算以圆心为坐标轴正方向开始逆时针旋转到线段 (cx, cy)(endX, endY) 的角度
+        double angle0End = angle0Begin + angle;
+        log.debug("angle0End: " + angle0End);
+        double radian0End = angle2Radian(angle0End);
+        Point endPoint = calPoint(cx, cy, r, radian0End);
+        log.debug("end point: " + endPoint);
+
         // 计算出控制棒长度
         double lengthControlBar = calControlBarLength(r, angle);
-        log.info("d(control bar): " + lengthControlBar);
+        log.debug("d(control bar): " + lengthControlBar);
         // 计算控制棒构建的直角三角形靠圆心侧内角 反三角函数
         double radianControlBar = atan(lengthControlBar / r);
         double angleControlBar = radian2Angle(radianControlBar);
@@ -71,7 +77,7 @@ public class BezierCurveCalculator {
         double radian0HypotenuseControlBar1 = angle2Radian(angle0HypotenuseControlBar1);
         Point pointControl1 = calPoint(cx, cy, lengthHypotenuseControlBar, radian0HypotenuseControlBar1);
 
-        double angle0HypotenuseControlBar2 = angle - angleControlBar;
+        double angle0HypotenuseControlBar2 = angle0End - angleControlBar;
         double radian0HypotenuseControlBar2 = angle2Radian(angle0HypotenuseControlBar2);
         Point pointControl2 = calPoint(cx, cy, lengthHypotenuseControlBar, radian0HypotenuseControlBar2);
 
@@ -103,16 +109,7 @@ public class BezierCurveCalculator {
         return angle0Begin;
     }
 
-    /** 计算弧线终点坐标 */
-    private static Point calEndPoint(double cx, double cy, double r, double angle0Begin, double angle) {
-        // 计算以圆心为坐标轴正方向开始逆时针旋转到线段 (cx, cy)(endX, endY) 的角度
-        double angle0End = angle0Begin + angle;
-        log.debug("angle0End: " + angle0End);
-        double radian0End = angle2Radian(angle0End);
-        // 通过计算圆心到终点坐标的 dx 与 dy 来计算终点坐标
-        return calPoint(cx, cy, r, radian0End);
-    }
-
+    // 通过计算圆心到终点坐标的 dx 与 dy 来计算终点坐标
     private static Point calPoint(double cx, double cy, double hypotenuse, double radian) {
         double dx = cos(radian) * hypotenuse;
         double dy = sin(radian) * hypotenuse;
