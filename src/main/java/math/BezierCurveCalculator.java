@@ -21,15 +21,10 @@ public class BezierCurveCalculator {
 
     private static final Log log = LogFactory.getLog(BezierCurveCalculator.class);
 
-    public static void main(String[] args) {
-        Result result1 = calculate(0, 0, 2, 1, -sqrt(3), 60);
-        log.info("result1: " + result1);
-        log.info("");
-        Result result2 = calculate(0, 0, 2, -1, sqrt(3), 90);
-        log.info("result2: " + result2);
-        log.info("");
-        Result result3 = calculate(0, 0, 1, 1, 0, 90);
-        log.info("result3" + result3);
+    public static Result calculate(Point circle, double r, double startAngle, double dAngle) {
+        Point start = calPoint(circle.x, circle.y, r, angle2Radian(startAngle));
+        // TODO: 2023/1/10 优化: 已知起点或已知起点角度，两种策略作为上层方法，公用下层方法
+        return calculate(circle, r, start, dAngle);
     }
 
     public static Result calculate(Point circle, double r, Point start, double angle) {
@@ -109,7 +104,7 @@ public class BezierCurveCalculator {
         return angle0Begin;
     }
 
-    // 通过计算圆心到终点坐标的 dx 与 dy 来计算终点坐标
+    /** 通过计算圆心到终点坐标的 dx 与 dy 来计算终点坐标 */
     private static Point calPoint(double cx, double cy, double hypotenuse, double radian) {
         double dx = cos(radian) * hypotenuse;
         double dy = sin(radian) * hypotenuse;
@@ -129,6 +124,7 @@ public class BezierCurveCalculator {
     }
 
     static class Result {
+        Point startPoint;
         Point endPoint;
         Point controlPoint1;
         Point controlPoint2;
@@ -143,6 +139,7 @@ public class BezierCurveCalculator {
         }
 
         public void setStartPoint(Point startPoint) {
+            this.startPoint = startPoint;
             dEndPoint = new Point(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
             dControlPoint1 = new Point(controlPoint1.x - startPoint.x, controlPoint1.y - startPoint.y);
             dControlPoint2 = new Point(controlPoint2.x - startPoint.x, controlPoint2.y - startPoint.y);
@@ -154,6 +151,9 @@ public class BezierCurveCalculator {
                     "endPoint=" + endPoint +
                     ", controlPoint1=" + controlPoint1 +
                     ", controlPoint2=" + controlPoint2 +
+                    ", dEndPoint=" + dEndPoint +
+                    ", dControlPoint1=" + dControlPoint1 +
+                    ", dControlPoint2=" + dControlPoint2 +
                     '}';
         }
 
@@ -164,6 +164,14 @@ public class BezierCurveCalculator {
             dEndPoint.round(scale);
             dControlPoint1.round(scale);
             dControlPoint2.round(scale);
+        }
+
+        public String getPath() {
+            return String.format("M %s %s c %s %s %s %s %s %s",
+                    startPoint.x, startPoint.y,
+                    dControlPoint1.x, dControlPoint1.y,
+                    dControlPoint2.x, dControlPoint2.y,
+                    dEndPoint.x, dEndPoint.y);
         }
     }
 
