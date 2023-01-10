@@ -5,6 +5,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Objects;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.acos;
@@ -28,6 +30,10 @@ public class BezierCurveCalculator {
         log.info("");
         Result result3 = calculate(0, 0, 1, 1, 0, 90);
         log.info("result3" + result3);
+    }
+
+    public static Result calculate(Point circle, double r, Point start, double angle) {
+        return calculate(circle.x, circle.y, r, start.x, start.y, angle);
     }
 
 
@@ -71,6 +77,7 @@ public class BezierCurveCalculator {
 
         int scale = 12;
         Result result = new Result(endPoint, pointControl1, pointControl2);
+        result.setStartPoint(new Point(startX, startY));
         result.round(scale);
         return result;
     }
@@ -128,11 +135,20 @@ public class BezierCurveCalculator {
         Point endPoint;
         Point controlPoint1;
         Point controlPoint2;
+        Point dEndPoint;
+        Point dControlPoint1;
+        Point dControlPoint2;
 
         public Result(Point endPoint, Point controlPoint1, Point controlPoint2) {
             this.endPoint = endPoint;
             this.controlPoint1 = controlPoint1;
             this.controlPoint2 = controlPoint2;
+        }
+
+        public void setStartPoint(Point startPoint) {
+            dEndPoint = new Point(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+            dControlPoint1 = new Point(controlPoint1.x - startPoint.x, controlPoint1.y - startPoint.y);
+            dControlPoint2 = new Point(controlPoint2.x - startPoint.x, controlPoint2.y - startPoint.y);
         }
 
         @Override
@@ -148,6 +164,9 @@ public class BezierCurveCalculator {
             endPoint.round(scale);
             controlPoint1.round(scale);
             controlPoint2.round(scale);
+            dEndPoint.round(scale);
+            dControlPoint1.round(scale);
+            dControlPoint2.round(scale);
         }
     }
 
@@ -165,9 +184,23 @@ public class BezierCurveCalculator {
             return "(x=" + x + ", y=" + y + ")";
         }
 
-        public void round(int scale) {
-            x = BigDecimal.valueOf(x).setScale(scale, BigDecimal.ROUND_HALF_UP).doubleValue();
-            y = BigDecimal.valueOf(y).setScale(scale, BigDecimal.ROUND_HALF_UP).doubleValue();
+        public Point round(int scale) {
+            x = BigDecimal.valueOf(x).setScale(scale, RoundingMode.HALF_UP).doubleValue();
+            y = BigDecimal.valueOf(y).setScale(scale, RoundingMode.HALF_UP).doubleValue();
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Point point = (Point) o;
+            return Double.compare(point.x, x) == 0 && Double.compare(point.y, y) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
         }
     }
 }
