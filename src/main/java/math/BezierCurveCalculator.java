@@ -4,10 +4,6 @@ package math;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Objects;
-
 import static java.lang.Math.PI;
 import static java.lang.Math.acos;
 import static java.lang.Math.atan;
@@ -128,9 +124,12 @@ public class BezierCurveCalculator {
         Point endPoint;
         Point controlPoint1;
         Point controlPoint2;
-        Point dEndPoint;
-        Point dControlPoint1;
-        Point dControlPoint2;
+        Point dStartEndPoint;
+        Point dStartEndControlPoint1;
+        Point dStartEndControlPoint2;
+        Point dEndStartPoint;
+        Point dEndStartControlPoint1;
+        Point dEndStartControlPoint2;
 
         public Result(Point endPoint, Point controlPoint1, Point controlPoint2) {
             this.endPoint = endPoint;
@@ -140,9 +139,12 @@ public class BezierCurveCalculator {
 
         public void setStartPoint(Point startPoint) {
             this.startPoint = startPoint;
-            dEndPoint = new Point(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
-            dControlPoint1 = new Point(controlPoint1.x - startPoint.x, controlPoint1.y - startPoint.y);
-            dControlPoint2 = new Point(controlPoint2.x - startPoint.x, controlPoint2.y - startPoint.y);
+            dStartEndPoint = new Point(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+            dStartEndControlPoint1 = new Point(controlPoint1.x - startPoint.x, controlPoint1.y - startPoint.y);
+            dStartEndControlPoint2 = new Point(controlPoint2.x - startPoint.x, controlPoint2.y - startPoint.y);
+            dEndStartPoint = new Point(-dStartEndPoint.x, -dStartEndPoint.y);
+            dEndStartControlPoint2 = new Point(controlPoint1.x - endPoint.x, controlPoint1.y - endPoint.y);
+            dEndStartControlPoint1 = new Point(controlPoint2.x - endPoint.x, controlPoint2.y - endPoint.y);
         }
 
         @Override
@@ -151,9 +153,9 @@ public class BezierCurveCalculator {
                     "endPoint=" + endPoint +
                     ", controlPoint1=" + controlPoint1 +
                     ", controlPoint2=" + controlPoint2 +
-                    ", dEndPoint=" + dEndPoint +
-                    ", dControlPoint1=" + dControlPoint1 +
-                    ", dControlPoint2=" + dControlPoint2 +
+                    ", dEndPoint=" + dStartEndPoint +
+                    ", dControlPoint1=" + dStartEndControlPoint1 +
+                    ", dControlPoint2=" + dStartEndControlPoint2 +
                     '}';
         }
 
@@ -161,51 +163,26 @@ public class BezierCurveCalculator {
             endPoint.round(scale);
             controlPoint1.round(scale);
             controlPoint2.round(scale);
-            dEndPoint.round(scale);
-            dControlPoint1.round(scale);
-            dControlPoint2.round(scale);
+            dStartEndPoint.round(scale);
+            dStartEndControlPoint1.round(scale);
+            dStartEndControlPoint2.round(scale);
+            dEndStartPoint.round(scale);
         }
 
         public String getPath() {
             return String.format("M %s %s c %s %s %s %s %s %s",
                     startPoint.x, startPoint.y,
-                    dControlPoint1.x, dControlPoint1.y,
-                    dControlPoint2.x, dControlPoint2.y,
-                    dEndPoint.x, dEndPoint.y);
-        }
-    }
-
-    static class Point {
-        double x;
-        double y;
-
-        public Point(double x, double y) {
-            this.x = x;
-            this.y = y;
+                    dStartEndControlPoint1.x, dStartEndControlPoint1.y,
+                    dStartEndControlPoint2.x, dStartEndControlPoint2.y,
+                    dStartEndPoint.x, dStartEndPoint.y);
         }
 
-        @Override
-        public String toString() {
-            return "(x=" + x + ", y=" + y + ")";
-        }
-
-        public Point round(int scale) {
-            x = BigDecimal.valueOf(x).setScale(scale, RoundingMode.HALF_UP).doubleValue();
-            y = BigDecimal.valueOf(y).setScale(scale, RoundingMode.HALF_UP).doubleValue();
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Point point = (Point) o;
-            return Double.compare(point.x, x) == 0 && Double.compare(point.y, y) == 0;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, y);
+        public String getPathRevert() {
+            return String.format("M %s %s c %s %s %s %s %s %s",
+                    endPoint.x, endPoint.y,
+                    dEndStartControlPoint1.x, dEndStartControlPoint1.y,
+                    dEndStartControlPoint2.x, dEndStartControlPoint2.y,
+                    dEndStartPoint.x, dEndStartPoint.y);
         }
     }
 }

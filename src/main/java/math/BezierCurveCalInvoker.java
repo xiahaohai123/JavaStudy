@@ -9,15 +9,20 @@ public class BezierCurveCalInvoker {
     private static final Log log = LogFactory.getLog(BezierCurveCalInvoker.class);
 
     public static void main(String[] args) {
-        BezierCurveCalculator.Point circle = new BezierCurveCalculator.Point(64, 64);
-        double r = 30;
-        double startAngle = 300;
-        double dAngle = 25;
+        Point circle = new Point(64, 64);
+        double r = 47;
+        double startAngle = 75;
+        double dAngle = 30;
         BezierCurveCalculator.Result result = calculate(circle, r, startAngle, dAngle);
-        log.info("path: " + result.getPath());
         log.info("startPoint " + result.startPoint);
-        log.info("dControlPoint1 " + result.dControlPoint1);
-        log.info("dControlPoint2 " + result.dControlPoint2);
-        log.info("dEndPoint " + result.dEndPoint);
+        log.info("dControlPoint1 " + result.dStartEndControlPoint1);
+        log.info("dControlPoint2 " + result.dStartEndControlPoint2);
+        log.info("dEndPoint " + result.dStartEndPoint);
+        log.info("path: \n" + result.getPath());
+        log.info("path revert: \n" + result.getPathRevert());
+
+        //Point point = TrigonometricCoordinateCalculator.calPoint(circle, r - 3, 105);
+        //log.info("point: " + point);
+        //log.info("point: \n" + point.x + " " + point.y);
     }
 }

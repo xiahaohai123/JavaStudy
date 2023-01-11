@@ -1,6 +1,5 @@
 package math;
 
-import math.BezierCurveCalculator.Point;
 import math.BezierCurveCalculator.Result;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,11 +35,11 @@ class BezierCurveCalculatorTest {
                     obj2Double(testCase.get(ANGLE)));
             int equalScale = 10;
             assertEquals(((Point) testCase.get(EXPECT_D_CONTROL_POINT1)).round(equalScale),
-                    result.dControlPoint1.round(equalScale));
+                    result.dStartEndControlPoint1.round(equalScale));
             assertEquals(((Point) testCase.get(EXPECT_D_CONTROL_POINT2)).round(equalScale),
-                    result.dControlPoint2.round(equalScale));
+                    result.dStartEndControlPoint2.round(equalScale));
             assertEquals(((Point) testCase.get(EXPECT_D_END)).round(equalScale),
-                    result.dEndPoint.round(equalScale));
+                    result.dStartEndPoint.round(equalScale));
         }
     }
 
